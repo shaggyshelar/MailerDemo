@@ -1,0 +1,22 @@
+{
+  "name": "mailer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shaggyshelar/MailerDemo.git"
+  },
+  "author": "Sagar Shelar",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/shaggyshelar/MailerDemo/issues"
+  },
+  "homepage": "https://github.com/shaggyshelar/MailerDemo#readme",
+  "dependencies": {
+    "fast-csv": "^2.4.1"
+  }
+}
