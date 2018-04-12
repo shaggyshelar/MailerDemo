@@ -5,6 +5,7 @@ var admin = require("firebase-admin");
 var serviceAccount = require('./tie-app.json');
 var XLSX = require('xlsx');
 var _ = require('underscore');
+var usersList = [];
 
 console.log('Initializing Firebase');
 admin.initializeApp({
@@ -173,10 +174,22 @@ function parseXLSX(filepath) {
         } else if(names.length == 2) {
             userToAdd.firstName = names[0];
             userToAdd.lastName = names[1];
+        } else if(names.length == 3) {
+            userToAdd.firstName = names[0];
+            userToAdd.lastName = names[1] + ' ' + names[2];
+        } else {
+            userToAdd.firstName = user.Name;
         }
+        userToAdd.password = Math.random().toString(36).slice(-6);
         userToAdd.email = user['Email id'];
+        usersList.push(userToAdd);
         console.log(userToAdd);
     });
+
+    var ws = XLSX.utils.json_to_sheet(usersList);
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'App Registered Users List');
+    XLSX.writeFile(wb, './Output/App Registered TiE Users.xls');
 }
 
 parseXLSX('TiECon_Pune_2018_-_Registrations_as_on_12th_April.xls');
