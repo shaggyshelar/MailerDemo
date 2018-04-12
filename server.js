@@ -3,6 +3,8 @@ var fs = require('fs');
 const functions = require('firebase-functions');
 var admin = require("firebase-admin");
 var serviceAccount = require('./tie-app.json');
+var XLSX = require('xlsx');
+var _ = require('underscore');
 
 console.log('Initializing Firebase');
 admin.initializeApp({
@@ -151,6 +153,32 @@ function startParsing(filepath) {
               stream.pipe(csvStream);
 }
 
-startParsing('registrationDetails.csv');
+//startParsing('registrationDetails.csv');
+
+function parseXLSX(filepath) {
+    var buf = fs.readFileSync(filepath);
+    var workbook = XLSX.read(buf, {type:'buffer'});
+    var first_sheet_name = workbook.SheetNames[0];
+    var worksheet = workbook.Sheets[first_sheet_name];
+    if(!worksheet) {
+        console.log('File does not contains any sheet.');
+        return;
+    }
+    var users = XLSX.utils.sheet_to_json(worksheet);
+    _.each(users, function(user) {
+        var userToAdd = {firstName: '', lastName: '', email: ''};
+        var names = user.Name.split(" ");
+        if(names.length == 1) {
+            userToAdd.firstName = names[0];
+        } else if(names.length == 2) {
+            userToAdd.firstName = names[0];
+            userToAdd.lastName = names[1];
+        }
+        userToAdd.email = user['Email id'];
+        console.log(userToAdd);
+    });
+}
+
+parseXLSX('TiECon_Pune_2018_-_Registrations_as_on_12th_April.xls');
 
 console.log('Completed Program Execution.');

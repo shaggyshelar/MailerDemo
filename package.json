@@ -19,6 +19,8 @@
   "dependencies": {
     "fast-csv": "^2.4.1",
     "firebase-admin": "^5.12.0",
-    "firebase-functions": "^1.0.1"
+    "firebase-functions": "^1.0.1",
+    "underscore": "^1.8.3",
+    "xlsx": "^0.12.8"
   }
 }
