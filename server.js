@@ -103,24 +103,23 @@ function writeUsersIntoXLS() {
     var formatedDate = moment(Date.now()).format('MM-DD-YYYY-HH-mm-ss');
     var fileName = './Output/App Registered TiE Users_' + formatedDate + '.xls'
     XLSX.writeFile(wb, fileName);
+    console.log("**********Completed writing into the file********");
 }
 
 function registerUsersToFirebase() {
     var waterfallFunctions = [];
     _.each(usersList, function (user, index) {
-        if(index < 2) {
             waterfallFunctions.push(function (next) {
                 registerUserToFirebase(user, function (err, post) {
                     console.log('Completed processin of', user.fullName);
                     next();
                 });
             });    
-        }
     });
 
     async.series(waterfallFunctions,
         function (err, results) {
-            console.log("Completed writing into the file");
+            console.log("**********Completed processing********");
             writeUsersIntoXLS();
         });
 }
@@ -239,4 +238,3 @@ function parseXLSX(filepath) {
 }
 
 parseXLSX('TiECon_Pune_2018_-_Registrations_as_on_12th_April.xls')
-console.log('Completed Program Execution.');
