@@ -2,7 +2,7 @@ var csv = require('fast-csv');
 var fs = require('fs');
 const functions = require('firebase-functions');
 var admin = require("firebase-admin");
-var serviceAccount = require('./tie-app.json');
+var serviceAccount = require('./tiecon-pune-production.json');
 var XLSX = require('xlsx');
 var _ = require('underscore');
 var moment = require('moment');
@@ -12,7 +12,7 @@ var async = require('async');
 console.log('Initializing Firebase');
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-    databaseURL: 'https://tie-con-management.firebaseio.com'
+    databaseURL: 'https://tiecon-pune.firebaseio.com'
 });
 
 function addAttendee() {
