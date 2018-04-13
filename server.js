@@ -54,7 +54,7 @@ function registerUserToFirebase(userDetails, callback) {
         .then((userRecord) => {
             errorMessage += "Created succesfully with UID:" + userRecord.uid + ".";
             userDetails.Message = errorMessage;
-            console.log("Success:"+userDetails.fullName+ ",UID=" + userRecord.uid);
+            console.log("Success:" + userDetails.fullName + ",UID=" + userRecord.uid);
             let attendeeDetails = {
                 email: userDetails.email,
                 firstName: userDetails.firstName,
@@ -72,26 +72,26 @@ function registerUserToFirebase(userDetails, callback) {
                 profileImageURL: ''
             };
             admin.firestore().collection("Attendee").doc(userRecord.uid)
-            .set(attendeeDetails)
-            .then((docRef) => {
-                errorMessage += "Added attendee details.";
-                userDetails.Message = errorMessage;
-                console.log("SuccessInAttendeeAdd:"+userDetails.fullName);          
-                callback();
-            })
-            .catch((ex) => {
-                errorMessage += "Error adding attendee details:" + ex;
-                userDetails.Message = errorMessage;
-                console.log("ErrorInAttendeeAdd:"+userDetails.fullName+",Error="+ex.message);          
-                console.log("Error adding attendee details:" + ex);                
-                callback();
-            });
+                .set(attendeeDetails)
+                .then((docRef) => {
+                    errorMessage += "Added attendee details.";
+                    userDetails.Message = errorMessage;
+                    console.log("SuccessInAttendeeAdd:" + userDetails.fullName);
+                    callback();
+                })
+                .catch((ex) => {
+                    errorMessage += "Error adding attendee details:" + ex;
+                    userDetails.Message = errorMessage;
+                    console.log("ErrorInAttendeeAdd:" + userDetails.fullName + ",Error=" + ex.message);
+                    console.log("Error adding attendee details:" + ex);
+                    callback();
+                });
         })
         .catch((error) => {
             errorMessage = "Error creating new user:" + error;
             userDetails.Message = errorMessage;
             callback();
-            console.log("ErrorNewUser:"+userDetails.fullName + ",Message=" +  error.message);
+            console.log("ErrorNewUser:" + userDetails.fullName + ",Message=" + error.message);
         });
 }
 
@@ -106,21 +106,57 @@ function writeUsersIntoXLS() {
     console.log("**********Completed writing into the file********");
 }
 
+function updateFirebaseUser(userDetails,callback) {
+    console.log('update', userDetails);
+    admin.firestore().collection('Attendee').doc(userDetails.uid).set({
+        attendeeCount: userDetails.attendeeCount,
+    }, { merge: true })
+        .then((docRef) => {
+            console.log('Updated' + userDetails.regId);
+            callback();
+        })
+        .catch((error) => {
+            console.log('Error updating' + userDetails.regId);
+            callback();
+        });
+}
+
+
 function registerUsersToFirebase() {
     var waterfallFunctions = [];
     _.each(usersList, function (user, index) {
-            waterfallFunctions.push(function (next) {
-                registerUserToFirebase(user, function (err, post) {
-                    console.log('Completed processin of', user.fullName);
-                    next();
-                });
-            });    
+        waterfallFunctions.push(function (next) {
+            registerUserToFirebase(user, function (err, post) {
+                console.log('Completed processin of', user.fullName);
+                next();
+            });
+        });
     });
 
     async.series(waterfallFunctions,
         function (err, results) {
             console.log("**********Completed processing********");
             writeUsersIntoXLS();
+        });
+}
+
+function updateUsersToFirebase() {
+    var waterfallFunctions = [];
+    _.each(usersList, function (user, index) {
+        if (index < 1) {
+            waterfallFunctions.push(function (next) {
+                updateFirebaseUser(user, function (err, post) {
+                    console.log('Completed processin of', user.fullName);
+                    next();
+                });
+            });
+        }
+    });
+
+    async.series(waterfallFunctions,
+        function (err, results) {
+            console.log("**********Completed processing********");
+            //writeUsersIntoXLS();
         });
 }
 
@@ -234,7 +270,29 @@ function parseXLSX(filepath) {
         usersList.push(userToAdd);
         //console.log(userToAdd);
     });
-    registerUsersToFirebase();
+    //registerUsersToFirebase();
+    updateUsersToFirebase();
 }
+//parseXLSX('TiECon_Pune_2018_-_Registrations_as_on_12th_April.xls')
 
-parseXLSX('TiECon_Pune_2018_-_Registrations_as_on_12th_April.xls')
+
+function parseXLSXForUpdate(filepath) {
+    var buf = fs.readFileSync(filepath);
+    var workbook = XLSX.read(buf, { type: 'buffer' });
+    var first_sheet_name = workbook.SheetNames[0];
+    var worksheet = workbook.Sheets[first_sheet_name];
+    if (!worksheet) {
+        console.log('File does not contains any sheet.');
+        return;
+    }
+    var users = XLSX.utils.sheet_to_json(worksheet);
+    _.each(users, function (user) {
+        var countId = user.regId.substring(4);
+        var userToAdd = { uid: user.uid, regId: user.regId, attendeeCount: countId };
+        usersList.push(userToAdd);
+        //console.log(userToAdd);
+    });
+    //registerUsersToFirebase();
+    updateUsersToFirebase();
+}
+parseXLSXForUpdate('FromPiyush.xls')
