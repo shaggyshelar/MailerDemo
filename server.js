@@ -43,41 +43,56 @@ function writeCSV() {
 }
 
 function registerUserToFirebase(userDetails, callback) {
-    userDetails.Message = "DOne processing user";
-    callback();
-    // admin.auth().createUser({
-    //     email: userDetailsuserEmail,
-    //     emailVerified: true,
-    //     password: userDetails.password,
-    //     displayName: userDetails.fullName,
-    //     disabled: false,
-    // })
-    //     .then((userRecord) => {
-    //         userDetails.Message += "Created succesfully with UID:", userRecord.uid + ".";
-    //         console.log("Successfully created new user:", userRecord.uid);
-    //         let attendeeDetails = {
-    //             email: req.userEmail,
-    //             firstName: userDetails.firstName,
-    //             lastName: userDetails.lastName,
-    //             fullName: userDetails.fullName,
-    //             roleName: 'Delegates',
-    //             isAttendee: true,
-    //             profileServices: ['Delegates'],
-    //             timestamp: req.timestamp,
-    //             registrationType: req.registrationType,
-    //             briefInfo: '',
-    //             attendeeCount: '',
-    //             attendeeLabel: 'DEL',
-    //             attendanceId: '',
-    //             sessionId: '',
-    //             linkedInURL: '',
-    //             profileImageURL: ''
-    //         };
-    //     })
-    //     .catch((error) => {
-    //         userDetails.Message = "Error creating new user:" + error;
-    //         console.log("Error creating new user:", error);
-    //     });
+    var errorMessage = "";
+    admin.auth().createUser({
+        email: userDetails.email,
+        emailVerified: true,
+        password: userDetails.password,
+        displayName: userDetails.fullName,
+        disabled: false,
+    })
+        .then((userRecord) => {
+            errorMessage += "Created succesfully with UID:" + userRecord.uid + ".";
+            userDetails.Message = errorMessage;
+            console.log("Success:"+userDetails.fullName+ ",UID=" + userRecord.uid);
+            let attendeeDetails = {
+                email: userDetails.email,
+                firstName: userDetails.firstName,
+                lastName: userDetails.lastName,
+                fullName: userDetails.fullName,
+                roleName: 'Delegates',
+                isAttendee: true,
+                profileServices: ['Delegates'],
+                briefInfo: '',
+                attendeeCount: '',
+                attendeeLabel: 'DEL',
+                attendanceId: '',
+                sessionId: '',
+                linkedInURL: '',
+                profileImageURL: ''
+            };
+            admin.firestore().collection("Attendee").doc(userRecord.uid)
+            .set(attendeeDetails)
+            .then((docRef) => {
+                errorMessage += "Added attendee details.";
+                userDetails.Message = errorMessage;
+                console.log("SuccessInAttendeeAdd:"+userDetails.fullName);          
+                callback();
+            })
+            .catch((ex) => {
+                errorMessage += "Error adding attendee details:" + ex;
+                userDetails.Message = errorMessage;
+                console.log("ErrorInAttendeeAdd:"+userDetails.fullName+",Error="+ex.message);          
+                console.log("Error adding attendee details:" + ex);                
+                callback();
+            });
+        })
+        .catch((error) => {
+            errorMessage = "Error creating new user:" + error;
+            userDetails.Message = errorMessage;
+            callback();
+            console.log("ErrorNewUser:"+userDetails.fullName + ",Message=" +  error.message);
+        });
 }
 
 function writeUsersIntoXLS() {
@@ -85,20 +100,22 @@ function writeUsersIntoXLS() {
     var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'App Registered Users List');
     var currentDate = new Date();
-    var formatedDate = moment(new Date()).format('MM-DD-YYYY-HH-MM-SS');
+    var formatedDate = moment(Date.now()).format('MM-DD-YYYY-HH-mm-ss');
     var fileName = './Output/App Registered TiE Users_' + formatedDate + '.xls'
     XLSX.writeFile(wb, fileName);
 }
 
 function registerUsersToFirebase() {
     var waterfallFunctions = [];
-    _.each(usersList, function (user) {
-        waterfallFunctions.push(function (next) {
-            registerUserToFirebase(user, function (err, post) {
-                console.log('Completed processin of', user.fullName);
-                next();
-            });
-        });
+    _.each(usersList, function (user, index) {
+        if(index < 2) {
+            waterfallFunctions.push(function (next) {
+                registerUserToFirebase(user, function (err, post) {
+                    console.log('Completed processin of', user.fullName);
+                    next();
+                });
+            });    
+        }
     });
 
     async.series(waterfallFunctions,
@@ -218,7 +235,6 @@ function parseXLSX(filepath) {
         usersList.push(userToAdd);
         //console.log(userToAdd);
     });
-    //this.writeUsersIntoXLS();
     registerUsersToFirebase();
 }
 
