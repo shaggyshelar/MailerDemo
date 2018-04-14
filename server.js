@@ -66,7 +66,6 @@ function registerUserToFirebase(userDetails, callback) {
                 briefInfo: '',
                 attendeeCount: '',
                 attendeeLabel: 'DEL',
-                attendanceId: '',
                 sessionId: '',
                 linkedInURL: '',
                 profileImageURL: ''
@@ -107,18 +106,24 @@ function writeUsersIntoXLS() {
 }
 
 function updateFirebaseUser(userDetails,callback) {
-    console.log('update', userDetails);
-    admin.firestore().collection('Attendee').doc(userDetails.uid).set({
-        attendeeCount: userDetails.attendeeCount,
-    }, { merge: true })
-        .then((docRef) => {
-            console.log('Updated' + userDetails.regId);
-            callback();
-        })
-        .catch((error) => {
-            console.log('Error updating' + userDetails.regId);
-            callback();
-        });
+    console.log('update', userDetails.regId);
+    if(userDetails.uid) {
+        admin.firestore().collection('Attendee').doc(userDetails.uid).set({
+            attendeeCount: userDetails.attendeeCount,
+        }, { merge: true })
+            .then((docRef) => {
+                console.log('Updated' + userDetails.regId);
+                callback();
+            })
+            .catch((error) => {
+                console.log('Error updating' + userDetails.regId);
+                console.log(error);
+                callback();
+            });    
+    } else {
+        console.log('UID EMPTYYYYYYYYYYYY', userDetails.regId);
+        callback();
+    }
 }
 
 
@@ -143,7 +148,7 @@ function registerUsersToFirebase() {
 function updateUsersToFirebase() {
     var waterfallFunctions = [];
     _.each(usersList, function (user, index) {
-        if (index < 1) {
+        if (index > 95) {
             waterfallFunctions.push(function (next) {
                 updateFirebaseUser(user, function (err, post) {
                     console.log('Completed processin of', user.fullName);
